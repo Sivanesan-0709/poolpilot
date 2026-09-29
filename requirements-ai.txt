@@ -1,0 +1,8 @@
+# Optional Pretrained AI Models Requirements for PoolPilot
+# Base app runs completely without these using built-in deterministic fallbacks.
+
+chronos-forecasting>=0.1.0
+prophet>=1.1.5
+easyocr>=1.7.0
+deepface>=0.0.90
+sentence-transformers>=2.5.0

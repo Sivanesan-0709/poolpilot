@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PoolPilot - Community Peer-to-Peer Ride Sharing Network</title>
+  
+  <!-- Vendored Leaflet CSS -->
+  <link rel="stylesheet" href="/static/vendor/leaflet.css">
+  
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚗</text></svg>">
+</head>
+<body class="light-theme">
+
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="brand" onclick="switchTab('home')">
+        <span class="brand-icon">🚗</span>
+        <div class="brand-text">
+          <h1>PoolPilot</h1>
+          <span class="tagline">Chennai P2P Mobility</span>
+        </div>
+      </div>
+      <div id="routing-status-badge" class="badge-status badge-online">
+        <span class="status-dot"></span> <span id="routing-status-text">Online Routing</span>
+      </div>
+    </div>
+
+    <!-- Demo Quick Login Bar -->
+    <div class="demo-quick-bar">
+      <span class="demo-label">Demo Logins:</span>
+      <button class="btn btn-xs btn-demo" onclick="demoLogin('rider')">👤 Rahul (REC)</button>
+      <button class="btn btn-xs btn-demo btn-woman" onclick="demoLogin('woman-rider')">👩 Priya (Cognizant)</button>
+      <button class="btn btn-xs btn-demo btn-driver" onclick="demoLogin('driver')">🚘 Karthik (TCS Driver)</button>
+      <button class="btn btn-xs btn-demo" onclick="demoLogin('admin')">🛡️ Admin</button>
+    </div>
+
+    <div class="header-right">
+      <button id="theme-toggle-btn" class="btn btn-icon" onclick="toggleTheme()" title="Toggle Dark/Light Mode">🌙</button>
+      
+      <div id="user-profile-header" class="user-profile-header" onclick="switchTab('profile')">
+        <div class="user-avatar" id="header-avatar">U</div>
+        <div class="user-info-mini">
+          <span class="user-name-mini" id="header-user-name">Guest</span>
+          <span class="user-badge-mini" id="header-trust-badge">Bronze</span>
+        </div>
+        <div class="wallet-mini">
+          <span class="wallet-icon">💳</span>
+          <span id="header-wallet-balance">₹150</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Navigation Tabs -->
+  <nav class="app-nav">
+    <div class="nav-container">
+      <button class="nav-btn active" data-tab="home" onclick="switchTab('home')">
+        <span class="nav-icon">🏠</span> Home
+      </button>
+      <button class="nav-btn" data-tab="find" onclick="switchTab('find')">
+        <span class="nav-icon">🔍</span> Find Ride
+      </button>
+      <button class="nav-btn" data-tab="offer" onclick="switchTab('offer')">
+        <span class="nav-icon">➕</span> Offer Ride
+      </button>
+      <button class="nav-btn" data-tab="college" onclick="switchTab('college')">
+        <span class="nav-icon">🎓</span> College Pools <span class="badge-new">15% Off</span>
+      </button>
+      <button class="nav-btn" data-tab="multimodal" onclick="switchTab('multimodal')">
+        <span class="nav-icon">🗺️</span> Smart Planner <span class="badge-new">Metro+Pool</span>
+      </button>
+      <button class="nav-btn" data-tab="trips" onclick="switchTab('trips')">
+        <span class="nav-icon">🚘</span> My Trips <span id="trips-count-badge" class="badge-count" style="display:none;">0</span>
+      </button>
+      <button class="nav-btn" data-tab="safety" onclick="switchTab('safety')">
+        <span class="nav-icon">🛡️</span> Trust & Safety
+      </button>
+      <button class="nav-btn" data-tab="admin" onclick="switchTab('admin')">
+        <span class="nav-icon">📊</span> Impact & Admin
+      </button>
+      <button class="nav-btn" data-tab="profile" onclick="switchTab('profile')">
+        <span class="nav-icon">👤</span> Profile
+      </button>
+    </div>
+  </nav>
+
+  <!-- Night Mode Safety Notice Banner -->
+  <div id="night-mode-banner" class="alert-banner alert-night" style="display:none;">
+    <span>🌙 <strong>Night Safety Mode Active (9 PM - 5 AM):</strong> Enhanced identity checks, mandatory SOS quick-access, and automatic trip sharing enabled.</span>
+  </div>
+
+  <!-- Route Deviation Warning Banner -->
+  <div id="deviation-banner" class="alert-banner alert-danger" style="display:none;">
+    <span>⚠️ <strong>Safety Warning:</strong> Vehicle has deviated >200m from planned route! Emergency monitoring activated.</span>
+    <button class="btn btn-xs btn-danger" onclick="triggerSos()">Trigger SOS</button>
+  </div>
+
+  <!-- App Main Content Container -->
+  <main class="app-main">
+
+    <!-- Split View: Interactive Map + Action Panel -->
+    <div class="view-split-layout">
+
+      <!-- Left / Top: Action & Content Panels -->
+      <section class="panel-section">
+
+        <!-- TAB 1: HOME -->
+        <div id="tab-home" class="tab-content active">
+          <div class="welcome-card">
+            <div class="welcome-badge">🌱 Chennai Urban Commute Pool</div>
+            <h2>Travel Smarter, Save Money, Cut Traffic & CO2</h2>
+            <p>Community peer-to-peer ride pooling with 6-factor AI matching, verified trust badges, student discounts, and multimodal transit planning.</p>
+            
+            <div class="hero-actions">
+              <button class="btn btn-primary btn-lg" onclick="switchTab('find')">
+                <span>🔍 Find a Commute Pool</span>
+              </button>
+              <button class="btn btn-secondary btn-lg" onclick="switchTab('college')">
+                <span>🎓 Campus Network (15% Off)</span>
+              </button>
+              <button class="btn btn-outline btn-lg" onclick="switchTab('offer')">
+                <span>🚘 Offer Empty Seats</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Impact Quick Highlights -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon">🚗</div>
+              <div class="stat-value" id="home-stat-cars">48+</div>
+              <div class="stat-label">Cars Removed from Roads</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">🌿</div>
+              <div class="stat-value" id="home-stat-co2">385 kg</div>
+              <div class="stat-label">CO₂ Emissions Saved</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">💰</div>
+              <div class="stat-value" id="home-stat-money">₹4,820</div>
+              <div class="stat-label">Commuter Money Saved</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">🛡️</div>
+              <div class="stat-value">100%</div>
+              <div class="stat-label">Verified Trust Commuters</div>
+            </div>
+          </div>
+
+          <!-- Recurring Daily Commute Pools -->
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3>🔄 Recurring Daily Commute Groups (Mon-Fri)</h3>
+              <span class="badge badge-info">AI Grouping</span>
+            </div>
+            <div id="recurring-pools-container" class="recurring-pools-list">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Predicted Hotspots Nudge for Drivers -->
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3>📍 Live Commute Demand Hotspots</h3>
+              <span class="badge badge-warning">AI Prediction</span>
+            </div>
+            <div id="demand-hotspots-container" class="hotspots-list">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: FIND RIDE (RIDER) -->
+        <div id="tab-find" class="tab-content">
+          <div class="card">
+            <div class="card-header">
+              <h2>🔍 Find a Matching Pool</h2>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <button type="button" class="btn btn-xs btn-outline" id="btn-voice-booking" onclick="startVoiceBooking()" style="border-color:#3B82F6; color:#2563EB;">
+                  🎙️ Voice Booking
+                </button>
+                <span class="badge badge-primary">6-Factor AI Match</span>
+              </div>
+            </div>
+
+            <!-- Voice Booking Live Speech Banner -->
+            <div id="voice-booking-banner" class="card mb-3" style="display:none; background:#EFF6FF; border:1px dashed #3B82F6; padding:10px 14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <strong style="font-size:12px; color:#1E40AF;">🎙️ Listening... (Say: "Ride to T Nagar at 8 AM" or "Pool to REC Thandalam at 8")</strong>
+                <button type="button" class="btn btn-xs btn-outline" onclick="stopVoiceBooking()">Cancel</button>
+              </div>
+              <div id="voice-transcript-text" style="font-size:12px; color:#1F2937; margin-top:4px; font-style:italic;">Listening to microphone...</div>
+            </div>
+
+            <form id="find-ride-form" onsubmit="handleFindRide(event)">
+              <!-- Pickup -->
+              <div class="form-group">
+                <label>Pickup Location</label>
+                <div class="input-with-actions">
+                  <input type="text" id="find-pickup-input" placeholder="Search locality (e.g. Tambaram, Siruseri, REC)..." autocomplete="off" required>
+                  <button type="button" class="btn btn-sm btn-outline" onclick="selectLocationFromMap('pickup')" title="Click on map to choose point">📍 Pick Map</button>
+                  <button type="button" class="btn btn-sm btn-outline" onclick="useCurrentLocation('pickup')" title="Use GPS">🎯 GPS</button>
+                </div>
+                <div id="pickup-autocomplete-results" class="autocomplete-dropdown"></div>
+                <input type="hidden" id="find-pickup-lat">
+                <input type="hidden" id="find-pickup-lng">
+              </div>
+
+              <!-- Drop -->
+              <div class="form-group">
+                <label>Drop Destination</label>
+                <div class="input-with-actions">
+                  <input type="text" id="find-drop-input" placeholder="Search destination (e.g. Guindy, Perungudi, T Nagar)..." autocomplete="off" required>
+                  <button type="button" class="btn btn-sm btn-outline" onclick="selectLocationFromMap('drop')" title="Click on map to choose point">📍 Pick Map</button>
+                  <button type="button" class="btn btn-sm btn-outline" onclick="useCurrentLocation('drop')" title="Use GPS">🎯 GPS</button>
+                </div>
+                <div id="drop-autocomplete-results" class="autocomplete-dropdown"></div>
+                <input type="hidden" id="find-drop-lat">
+                <input type="hidden" id="find-drop-lng">
+              </div>
+
+              <!-- Time & Seats -->
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label>Departure Window</label>
+                  <input type="time" id="find-dept-time" value="08:30" required>
+                </div>
+                <div class="form-group col-6">
+                  <label>Seats Needed</label>
+                  <select id="find-seats">
+                    <option value="1" selected>1 Seat</option>
+                    <option value="2">2 Seats</option>
+                    <option value="3">3 Seats</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Priority Mode -->
+              <div class="form-group">
+                <label>AI Priority Optimization (Score Weights)</label>
+                <div class="priority-pills">
+                  <label class="priority-pill">
+                    <input type="radio" name="priority_mode" value="balanced" checked>
+                    <span class="pill-btn">⚖️ Balanced (Route 40%, Time 20%, Detour 10%, Cost 10%, Safety 10%, Rel 10%)</span>
+                  </label>
+                  <label class="priority-pill">
+                    <input type="radio" name="priority_mode" value="safety">
+                    <span class="pill-btn">🛡️ Safety-First (Safety 30%, Rel 15%, Route 30%, Detour 10%)</span>
+                  </label>
+                  <label class="priority-pill">
+                    <input type="radio" name="priority_mode" value="cheapest">
+                    <span class="pill-btn">💰 Cheapest (Cost 30%, Route 30%, Time 15%, Detour 10%)</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Dynamic Safety Matching Layer Accordion -->
+              <div class="safety-pref-box card mb-3">
+                <div class="card-header" style="padding:8px 12px; cursor:pointer;" onclick="toggleSafetyAccordion()">
+                  <strong style="font-size:13px;">🛡️ Dynamic Safety Preferences Filter</strong>
+                  <span id="safety-pref-toggle-icon" style="font-size:12px; color:#4B5563;">▼ Expand</span>
+                </div>
+                <div id="safety-pref-content" class="safety-pref-content" style="padding:10px 12px; display:block;">
+                  <div class="safety-pref-grid">
+                    <label class="pref-checkbox">
+                      <input type="checkbox" id="pref-verified-id" checked>
+                      <span>Verified ID Only</span>
+                    </label>
+                    <label class="pref-checkbox">
+                      <input type="checkbox" id="pref-same-org">
+                      <span>Same College / Company Only</span>
+                    </label>
+                    <label class="pref-checkbox">
+                      <input type="checkbox" id="pref-same-gender">
+                      <span>Same Gender Only</span>
+                    </label>
+                    <label class="pref-checkbox">
+                      <input type="checkbox" id="pref-zero-complaints">
+                      <span>Zero Complaints in 30 Days</span>
+                    </label>
+                    <label class="pref-checkbox">
+                      <input type="checkbox" id="pref-emergency-contact">
+                      <span>Emergency Contact on File</span>
+                    </label>
+                  </div>
+                  
+                  <div class="mt-2" style="display:flex; align-items:center; gap:12px;">
+                    <label style="font-size:12px; font-weight:600; min-width:140px;">
+                      Min Driver Rating: <span id="pref-rating-val" style="color:#D97706; font-weight:bold;">4.0★</span>
+                    </label>
+                    <input type="range" id="pref-min-rating" min="3.0" max="5.0" step="0.1" value="4.0" oninput="updateRatingSliderDisplay(this.value)" style="flex:1;">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Filters: Women-Only & Max Budget -->
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label>Max Budget (₹)</label>
+                  <input type="number" id="find-max-budget" placeholder="e.g. 100" min="20" max="500">
+                </div>
+                <div class="form-group col-6 checkbox-group-container">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="find-women-only">
+                    <span>👩 Women-Only Pool</span>
+                  </label>
+                </div>
+              </div>
+
+              <button type="submit" id="btn-search-matches" class="btn btn-primary btn-block">
+                <span>⚡ Find Matching Rides (6-Factor AI Ranking)</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Matching Results Section -->
+          <div id="matching-results-section" class="mt-4" style="display:none;">
+            <!-- Candidate Filtering Summary Box -->
+            <div id="candidate-filtering-summary" class="candidate-summary-banner mb-3" style="display:none;">
+              <!-- JS rendered summary -->
+            </div>
+
+            <!-- Single-Click Relaxation Banner (When 0 matches) -->
+            <div id="safety-relaxation-container" class="mb-3" style="display:none;">
+              <!-- JS rendered relaxation buttons -->
+            </div>
+
+            <div class="results-header">
+              <h3>Top 3 AI Matches</h3>
+              <span id="results-count-tag" class="badge badge-success">0 Matches</span>
+            </div>
+            <div id="matches-list-container" class="matches-list">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: OFFER RIDE (DRIVER) -->
+        <div id="tab-offer" class="tab-content">
+          <div class="card">
+            <div class="card-header">
+              <h2>🚘 Post a Ride (Driver)</h2>
+              <span class="badge badge-secondary">Share Empty Seats</span>
+            </div>
+
+            <form id="offer-ride-form" onsubmit="handleOfferRide(event)">
+              <div class="form-group">
+                <label>Departure Origin</label>
+                <div class="input-with-actions">
+                  <input type="text" id="offer-origin-input" placeholder="Origin (e.g. Tambaram, Siruseri, REC)..." autocomplete="off" required>
+                  <button type="button" class="btn btn-sm btn-outline" onclick="selectLocationFromMap('offer-origin')">📍 Pick Map</button>
+                </div>
+                <div id="offer-origin-autocomplete" class="autocomplete-dropdown"></div>
+                <input type="hidden" id="offer-origin-lat">
+                <input type="hidden" id="offer-origin-lng">
+              </div>
+
+              <div class="form-group">
+                <label>Final Destination</label>
+                <div class="input-with-actions">
+                  <input type="text" id="offer-dest-input" placeholder="Destination (e.g. Guindy, Tidel Park, T Nagar)..." autocomplete="off" required>
+                  <button type="button" class="btn btn-sm btn-outline" onclick="selectLocationFromMap('offer-dest')">📍 Pick Map</button>
+                </div>
+                <div id="offer-dest-autocomplete" class="autocomplete-dropdown"></div>
+                <input type="hidden" id="offer-dest-lat">
+                <input type="hidden" id="offer-dest-lng">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label>Departure Time</label>
+                  <input type="time" id="offer-time" value="08:45" required>
+                </div>
+                <div class="form-group col-6">
+                  <label>Available Seats</label>
+                  <select id="offer-seats">
+                    <option value="1">1 Seat</option>
+                    <option value="2">2 Seats</option>
+                    <option value="3" selected>3 Seats</option>
+                    <option value="4">4 Seats</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label>Price Cap (₹/km)</label>
+                  <input type="number" id="offer-price-km" value="6.0" step="0.5" min="4.0" max="10.0">
+                </div>
+                <div class="form-group col-6 checkbox-group-container">
+                  <label class="checkbox-label" id="offer-women-only-container">
+                    <input type="checkbox" id="offer-women-only">
+                    <span>👩 Women-Only Pool</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="offer-recurring" checked>
+                  <span>🔄 Repeat Mon - Fri (Daily Office/College Commute)</span>
+                </label>
+              </div>
+
+              <button type="button" class="btn btn-secondary btn-block mb-2" onclick="previewDriverRoute()">
+                🗺️ Preview Route on Map
+              </button>
+
+              <button type="submit" id="btn-post-ride" class="btn btn-primary btn-block">
+                ✨ Post Ride & Enable Pool Matches
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- TAB 4: COLLEGE NETWORK & STUDENT COMMUTE POOLING -->
+        <div id="tab-college" class="tab-content">
+          <!-- Student Verification Card -->
+          <div class="card">
+            <div class="card-header">
+              <h2>🎓 Student Commute Network</h2>
+              <span class="badge badge-success">15% Student Discount</span>
+            </div>
+            <p class="text-muted" style="font-size:13px;">Verified college students and faculty get dedicated campus commute pools, split fares with 15% student subsidy, and active campus notice boards.</p>
+            
+            <div class="student-verify-box p-3 mt-2" style="background:#F0FDF4; border:1px solid #86EFAC; border-radius:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <div>
+                  <strong style="color:#166534;">🎓 Verified Campus Domain:</strong>
+                  <span id="student-college-tag" style="margin-left:6px; font-weight:600; color:#15803D;">Rajalakshmi Engineering College (@rec.ac.in)</span>
+                </div>
+                <button class="btn btn-xs btn-outline" onclick="openStudentVerifyModal()">Change College Domain</button>
+              </div>
+            </div>
+
+            <!-- Campus Filter Pills -->
+            <div class="campus-filter-bar mt-3">
+              <button class="btn btn-xs btn-campus active" onclick="filterCollegePools('all', this)">All Campuses</button>
+              <button class="btn btn-xs btn-campus" onclick="filterCollegePools('rec.ac.in', this)">Rajalakshmi (REC)</button>
+              <button class="btn btn-xs btn-campus" onclick="filterCollegePools('annauniv.edu', this)">Anna University</button>
+              <button class="btn btn-xs btn-campus" onclick="filterCollegePools('iitm.ac.in', this)">IIT Madras</button>
+            </div>
+          </div>
+
+          <!-- Active College Pools List -->
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3>🚗 Active Student Commute Pools (Tambaram, Velachery, Porur, Anna Nagar, Guindy)</h3>
+              <button class="btn btn-sm btn-primary" onclick="openCreateCollegePoolModal()">+ Create Campus Pool</button>
+            </div>
+            <div id="college-pools-list-container" class="college-pools-grid mt-3">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 5: SMART COMMUTE PLANNER (MULTIMODAL) -->
+        <div id="tab-multimodal" class="tab-content">
+          <div class="card">
+            <div class="card-header">
+              <h2>🗺️ Smart Commute Planner</h2>
+              <span class="badge badge-primary">Multimodal Transit Graph</span>
+            </div>
+            <p class="text-muted" style="font-size:13px;">Dijkstra multi-criteria routing combining Chennai Metro (Blue & Green lines), Suburban Railway, MTC Express Buses, and Live Peer Carpools.</p>
+            
+            <form onsubmit="handleMultimodalPlan(event)" class="mt-3">
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label>Origin Hub</label>
+                  <input type="text" id="mm-origin-input" placeholder="e.g. Tambaram Railway Station" value="Tambaram Railway Station" required>
+                </div>
+                <div class="form-group col-6">
+                  <label>Destination Hub</label>
+                  <input type="text" id="mm-dest-input" placeholder="e.g. T. Nagar Panagal Park" value="T. Nagar Panagal Park" required>
+                </div>
+              </div>
+
+              <!-- Priority Presets -->
+              <div class="form-group">
+                <label>Optimization Priority</label>
+                <div class="priority-pills">
+                  <label class="priority-pill">
+                    <input type="radio" name="mm_priority" value="fastest" checked>
+                    <span class="pill-btn">⚡ Fastest (Minutes)</span>
+                  </label>
+                  <label class="priority-pill">
+                    <input type="radio" name="mm_priority" value="cheapest">
+                    <span class="pill-btn">💰 Cheapest (INR)</span>
+                  </label>
+                  <label class="priority-pill">
+                    <input type="radio" name="mm_priority" value="safest">
+                    <span class="pill-btn">🛡️ Safest (Rating)</span>
+                  </label>
+                  <label class="priority-pill">
+                    <input type="radio" name="mm_priority" value="least_walking">
+                    <span class="pill-btn">🚶 Least Walking</span>
+                  </label>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block">
+                ⚡ Generate Door-to-Door Itineraries
+              </button>
+            </form>
+          </div>
+
+          <!-- Top 3 Itineraries Display -->
+          <div id="multimodal-results-section" class="mt-4" style="display:none;">
+            <div class="results-header">
+              <h3>Top 3 Door-to-Door Itineraries</h3>
+              <span class="badge badge-success">Door-to-Door</span>
+            </div>
+            <div id="multimodal-itineraries-container" class="itineraries-list mt-2">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 6: MY TRIPS & LIVE TRACKING -->
+        <div id="tab-trips" class="tab-content">
+          <div class="card">
+            <div class="card-header">
+              <h2>🚘 My Commute Trips & Live GPS</h2>
+              <button class="btn btn-xs btn-outline" onclick="loadMyTrips()">🔄 Refresh</button>
+            </div>
+            
+            <div id="active-trip-banner-container">
+              <!-- Highlighted Active Trip Controls -->
+            </div>
+
+            <div id="my-trips-list" class="trips-list mt-4">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 7: TRUST, SAFETY & TRUSTED CIRCLE -->
+        <div id="tab-safety" class="tab-content">
+          <!-- Trust Score Meter Card -->
+          <div class="card">
+            <div class="card-header">
+              <h2>🛡️ Trust & Verification Center</h2>
+              <span id="safety-badge-pill" class="badge badge-gold">Gold Verified</span>
+            </div>
+
+            <div class="trust-meter-container">
+              <div class="trust-circle-wrap">
+                <div class="trust-score-big" id="safety-score-value">92</div>
+                <div class="trust-score-label">Trust Score / 100</div>
+              </div>
+
+              <div class="trust-breakdown-list">
+                <div class="trust-item" id="trust-item-id">
+                  <span>🆔 Govt ID / College ID</span>
+                  <span class="trust-status text-success">✓ Verified (+25 pts)</span>
+                </div>
+                <div class="trust-item" id="trust-item-phone">
+                  <span>📱 Phone & OTP</span>
+                  <span class="trust-status text-success">✓ Verified (+10 pts)</span>
+                </div>
+                <div class="trust-item" id="trust-item-org">
+                  <span>🏫 College / Company Domain</span>
+                  <span class="trust-status text-success">✓ Verified (+15 pts)</span>
+                </div>
+                <div class="trust-item" id="trust-item-member">
+                  <span>⭐ Verified Trust Membership</span>
+                  <span class="trust-status text-primary" id="trust-member-status">Active (5% Fee, +5 pts)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trusted Circle (WhatsApp / SMS) Card -->
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3>👨‍👩‍👧 Trusted Circle (WhatsApp & SMS Auto-Share)</h3>
+              <span class="badge badge-primary">Up to 5 Contacts</span>
+            </div>
+            <p class="text-muted" style="font-size:12px;">Add family, partner, or friends. When your ride starts, 1-click WhatsApp trip tracking and automated 200m route deviation alerts will be sent.</p>
+            <div id="trusted-contacts-list" class="emergency-list mt-2">
+              <!-- JS rendered -->
+            </div>
+            <button class="btn btn-sm btn-primary mt-3" onclick="openAddTrustedContactModal()">+ Add Trusted Contact</button>
+          </div>
+
+          <!-- Mock ID Verification Card -->
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3>🪪 Instant Mock ID & Face Verification</h3>
+              <span class="badge badge-info">AI Verified</span>
+            </div>
+            <p class="text-muted">Upload test ID document + selfie to test the OCR and face matching verification engine.</p>
+            
+            <form onsubmit="handleMockVerifyId(event)">
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label>Document Type</label>
+                  <select id="verify-doc-type">
+                    <option value="College Student ID (REC / Anna Univ)">College Student ID</option>
+                    <option value="Aadhaar Card (Govt of India)">Aadhaar Card</option>
+                    <option value="Driver's License">Driver's License</option>
+                    <option value="Corporate Employee Badge">Corporate Employee Badge</option>
+                  </select>
+                </div>
+                <div class="form-group col-6">
+                  <label>ID Document</label>
+                  <input type="file" id="verify-doc-file" accept="image/*">
+                </div>
+              </div>
+
+              <button type="submit" id="btn-verify-id" class="btn btn-secondary btn-block">
+                ⚡ Run Mock ID & Face Verification
+              </button>
+            </form>
+          </div>
+
+          <!-- Vehicle Registration Card -->
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3>🚗 Driver Vehicle Registration</h3>
+              <span class="badge badge-secondary">Indian Plate Format</span>
+            </div>
+            <form onsubmit="handleRegisterVehicle(event)">
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label>Registration Plate (e.g. TN 09 AB 1234)</label>
+                  <input type="text" id="reg-plate-num" placeholder="TN 09 AB 1234" required>
+                </div>
+                <div class="form-group col-6">
+                  <label>Vehicle Model & Color</label>
+                  <input type="text" id="reg-plate-model" placeholder="Honda City (White)" required>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-outline btn-block">
+                ✅ Validate & Register Vehicle
+              </button>
+            </form>
+          </div>
+
+          <!-- Membership -->
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3>💎 Verified Trust Membership</h3>
+              <span class="badge badge-warning">₹49 / month</span>
+            </div>
+            <p>Reduces platform commission from 10% to 5%, grants priority AI match ranking, and adds +5 Trust Score points.</p>
+            <button class="btn btn-primary" onclick="purchaseMembership()">
+              💳 Activate Membership (Mock ₹49)
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 8: PERSONAL & COLLEGE IMPACT DASHBOARD -->
+        <div id="tab-admin" class="tab-content">
+          <div class="card">
+            <div class="card-header">
+              <h2>🌱 Personal & College Impact Dashboard</h2>
+              <!-- Month Selector -->
+              <div style="display:flex; gap:8px; align-items:center;">
+                <label style="font-size:12px; font-weight:600;">Month:</label>
+                <select id="impact-month-select" onchange="loadImpactData(this.value)" style="padding:4px 8px; border-radius:4px; font-size:12px;">
+                  <option value="March 2026" selected>March 2026</option>
+                  <option value="February 2026">February 2026</option>
+                  <option value="January 2026">January 2026</option>
+                  <option value="December 2025">December 2025</option>
+                  <option value="November 2025">November 2025</option>
+                  <option value="October 2025">October 2025</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- College Impact Cascade Banner -->
+            <div id="college-cascade-banner" class="p-3 mt-3" style="background:linear-gradient(135deg, #ECFDF5, #D1FAE5); border:1px solid #10B981; border-radius:8px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:24px;">🏆</span>
+                <div>
+                  <strong style="color:#065F46; font-size:14px;" id="cascade-headline">Your REC cohort saved 1,420 kg CO2, ₹1.84 Lakhs this month — Ranked #1 in Chennai!</strong>
+                  <div style="font-size:12px; color:#047857; margin-top:2px;">Top green mobility campus in Chennai suburban network.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Personal Impact Numbers -->
+            <div class="admin-metrics-grid mt-3">
+              <div class="metric-box">
+                <div class="metric-val text-success" id="imp-co2">52.8 kg</div>
+                <div class="metric-name">CO₂ Saved This Month</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-val text-primary" id="imp-money">₹3,100</div>
+                <div class="metric-name">Money Saved</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-val text-warning" id="imp-fuel">35.2 L</div>
+                <div class="metric-name">Fuel Saved</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-val" id="imp-rides">18</div>
+                <div class="metric-name">Rides Pooled</div>
+              </div>
+            </div>
+
+            <!-- Social Share Card Export -->
+            <div class="card mt-4" style="background:#FAF5FF; border:1px solid #E9D5FF;">
+              <div class="card-header" style="background:transparent;">
+                <h3>🎨 Social Share Card</h3>
+                <button class="btn btn-sm btn-primary" onclick="exportSocialShareCard()">📥 Download Share Card (.PNG)</button>
+              </div>
+              <p class="text-muted" style="font-size:12px;">Share your verified mobility impact card on WhatsApp Status, LinkedIn, or Instagram.</p>
+              <div class="canvas-wrap" style="display:flex; justify-content:center; padding:10px;">
+                <canvas id="social-share-canvas" width="480" height="260" style="max-width:100%; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);"></canvas>
+              </div>
+            </div>
+
+            <!-- AI Models Status Subsystem -->
+            <div class="card mt-4">
+              <div class="card-header">
+                <h3>🧠 Pretrained AI Models & Fallback Architecture</h3>
+                <span class="badge badge-info" id="ai-models-overall-badge">Subsystems Active</span>
+              </div>
+              <div id="ai-models-status-list" class="mt-3">
+                <!-- Populated via JS -->
+              </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-container mt-4">
+              <div class="chart-card">
+                <h4>⏰ Peak-Hour Demand Distribution</h4>
+                <canvas id="chart-hourly-demand" height="180"></canvas>
+              </div>
+              <div class="chart-card mt-3">
+                <h4>🌱 Monthly CO₂ Savings Trend</h4>
+                <canvas id="chart-co2-trend" height="180"></canvas>
+              </div>
+            </div>
+
+            <!-- College Leaderboard Table -->
+            <div class="card mt-4">
+              <div class="card-header">
+                <h3>🏆 Chennai Green Mobility College Leaderboard</h3>
+                <span class="badge badge-success">Suburban & Metro Hubs</span>
+              </div>
+              <div id="green-leaderboard-container" class="leaderboard-table-wrap">
+                <!-- JS populated -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 9: PROFILE & WALLET -->
+        <div id="tab-profile" class="tab-content">
+          <div class="card">
+            <div class="card-header">
+              <h2>👤 User Profile & Wallet</h2>
+              <span class="badge badge-primary" id="profile-role-badge">Rider</span>
+            </div>
+
+            <div class="profile-details-grid mt-3">
+              <div class="profile-field">
+                <label>Full Name</label>
+                <div class="field-val" id="prof-name">Rahul Verma</div>
+              </div>
+              <div class="profile-field">
+                <label>Phone Number</label>
+                <div class="field-val" id="prof-phone">9840112233</div>
+              </div>
+              <div class="profile-field">
+                <label>Gender</label>
+                <div class="field-val" id="prof-gender">Male</div>
+              </div>
+              <div class="profile-field">
+                <label>College / Organization</label>
+                <div class="field-val" id="prof-org">Rajalakshmi Engineering College (REC)</div>
+              </div>
+            </div>
+
+            <div class="wallet-card mt-4">
+              <div class="wallet-header">
+                <div>
+                  <div class="text-muted">PoolPilot Wallet Balance</div>
+                  <div class="wallet-amount-big" id="prof-wallet-amt">₹250.00</div>
+                </div>
+                <button class="btn btn-sm btn-primary" onclick="addMockWalletCredits()">+ Add ₹100 Credits</button>
+              </div>
+            </div>
+
+            <div class="referral-box mt-4">
+              <h4>🎁 Referral Reward Program</h4>
+              <p>Share your code with friends or campus peers. Both of you get <strong>₹20 ride credit</strong> on signup!</p>
+              <div class="referral-code-display">
+                <span id="prof-ref-code">RAHUL20</span>
+                <button class="btn btn-xs btn-outline" onclick="copyReferralCode()">📋 Copy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Right / Bottom: Sticky Interactive Map Viewport -->
+      <section class="map-section">
+        <div class="map-container-wrap">
+          <div id="map" class="map-viewport"></div>
+          
+          <!-- Floating Map Controls & Overlays -->
+          <div class="map-floating-overlay">
+            <div class="map-legend">
+              <span class="legend-item"><span class="dot dot-pickup"></span> Pickup</span>
+              <span class="legend-item"><span class="dot dot-drop"></span> Drop</span>
+              <span class="legend-item"><span class="dot dot-meeting"></span> Meeting Point</span>
+              <span class="legend-item"><span class="dot dot-driver"></span> Car GPS</span>
+            </div>
+
+            <div class="map-quick-buttons">
+              <button class="btn btn-sm btn-map-tool" onclick="fitMapBounds()" title="Reset map to Chennai center">🎯 Center</button>
+              <button class="btn btn-sm btn-map-tool" onclick="toggleHeatmapLayer()" id="btn-heatmap-toggle">🔥 Toggle Heatmap</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Modals Container -->
+
+  <!-- Booking Confirmation & OTP Modal -->
+  <div id="modal-booking" class="modal-backdrop" style="display:none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modal-booking-title">Ride Booked Successfully!</h3>
+        <button class="btn-close" onclick="closeModal('modal-booking')">×</button>
+      </div>
+      <div class="modal-body" id="modal-booking-body">
+        <!-- JS rendered -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('modal-booking')">Close</button>
+        <button class="btn btn-primary" onclick="switchTab('trips'); closeModal('modal-booking')">Track on My Trips</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trusted Contact Add Modal -->
+  <div id="modal-add-contact" class="modal-backdrop" style="display:none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>➕ Add Trusted Contact</h3>
+        <button class="btn-close" onclick="closeModal('modal-add-contact')">×</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="handleAddTrustedContactSubmit(event)">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="contact-name" placeholder="e.g. Suresh Verma" required>
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" id="contact-phone" placeholder="e.g. 9840998877" required>
+          </div>
+          <div class="form-group">
+            <label>Relationship</label>
+            <select id="contact-relation">
+              <option value="Parent">Parent</option>
+              <option value="Friend">Friend</option>
+              <option value="Partner">Partner</option>
+              <option value="College Security">College Security</option>
+              <option value="Emergency Contact">Emergency Contact</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block mt-3">Add to Trusted Circle</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Student Email Verification Modal -->
+  <div id="modal-student-verify" class="modal-backdrop" style="display:none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>🎓 Verify College Email Domain</h3>
+        <button class="btn-close" onclick="closeModal('modal-student-verify')">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted" style="font-size:13px;">Enter your college email (@rec.ac.in, @annauniv.edu, @iitm.ac.in, etc.) to activate 15% student pool discounts.</p>
+        <form onsubmit="handleStudentEmailVerify(event)">
+          <div class="form-group">
+            <label>College Email</label>
+            <input type="email" id="student-email-input" placeholder="e.g. rahul.v@rec.ac.in" required>
+          </div>
+          <button type="submit" class="btn btn-success btn-block mt-3">Verify Campus Domain</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create College Pool Modal -->
+  <div id="modal-create-college-pool" class="modal-backdrop" style="display:none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>🎓 Create Campus Commute Pool</h3>
+        <button class="btn-close" onclick="closeModal('modal-create-college-pool')">×</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="handleCreateCollegePoolSubmit(event)">
+          <div class="form-group">
+            <label>Pool Name</label>
+            <input type="text" id="cpool-name" placeholder="e.g. Tambaram to REC Morning Express" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label>College Campus</label>
+              <select id="cpool-college">
+                <option value="Rajalakshmi Engineering College (REC)">Rajalakshmi (REC)</option>
+                <option value="Anna University (CEG / ACT)">Anna University (CEG)</option>
+                <option value="IIT Madras">IIT Madras</option>
+                <option value="SRM Institute of Science & Technology">SRM University</option>
+              </select>
+            </div>
+            <div class="form-group col-6">
+              <label>Direction</label>
+              <select id="cpool-direction">
+                <option value="home_to_college">Home → College</option>
+                <option value="college_to_home">College → Home</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label>Home Zone</label>
+              <input type="text" id="cpool-origin" placeholder="e.g. Tambaram Station" required>
+            </div>
+            <div class="form-group col-6">
+              <label>Campus Destination</label>
+              <input type="text" id="cpool-dest" placeholder="e.g. REC Thandalam Gate" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label>Departure Time</label>
+              <input type="time" id="cpool-time" value="07:45" required>
+            </div>
+            <div class="form-group col-6">
+              <label>Seats</label>
+              <input type="number" id="cpool-seats" value="3" min="1" max="4" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Standard Fare (₹)</label>
+            <input type="number" id="cpool-fare" value="50" min="20" max="150" required>
+            <small class="text-muted">15% student discount will be automatically applied (₹42.50 per seat).</small>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block mt-3">Publish on Campus Notice Board</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOS Emergency Modal -->
+  <div id="modal-sos" class="modal-backdrop" style="display:none;">
+    <div class="modal-dialog modal-sos-dialog">
+      <div class="modal-header bg-danger text-white">
+        <h3>🚨 EMERGENCY SOS ACTIVATED</h3>
+        <button class="btn-close text-white" onclick="closeModal('modal-sos')">×</button>
+      </div>
+      <div class="modal-body" id="modal-sos-body">
+        <!-- JS rendered -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger btn-block" onclick="closeModal('modal-sos')">I am Safe / Close Alert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share Trip Modal -->
+  <div id="modal-share" class="modal-backdrop" style="display:none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>🔗 Live WhatsApp Trip Share</h3>
+        <button class="btn-close" onclick="closeModal('modal-share')">×</button>
+      </div>
+      <div class="modal-body" id="modal-share-body">
+        <!-- JS rendered -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeModal('modal-share')">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Safe Drop Feedback Modal -->
+  <div id="modal-safedrop" class="modal-backdrop" style="display:none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>🏁 Trip Completed: Reached Safely?</h3>
+        <button class="btn-close" onclick="closeModal('modal-safedrop')">×</button>
+      </div>
+      <div class="modal-body">
+        <p>Please confirm your safe arrival to complete trip validation.</p>
+        <div class="safedrop-actions">
+          <button class="btn btn-success btn-lg btn-block" onclick="handleSafeDropResponse(true)">
+            ✅ Yes, Reached Safely!
+          </button>
+          <button class="btn btn-outline btn-block mt-2" onclick="handleSafeDropResponse(false)">
+            ⚠️ Report Route / Driver Issue
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mock UPI Payment Screen Modal -->
+  <div id="modal-payment" class="modal-backdrop" style="display:none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>💳 Ride Payment & Commission Breakdown</h3>
+        <button class="btn-close" onclick="closeModal('modal-payment')">×</button>
+      </div>
+      <div class="modal-body" id="modal-payment-body">
+        <!-- JS rendered -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Popup -->
+  <div id="toast" class="toast-popup"></div>
+
+  <!-- Vendored Libraries -->
+  <script src="/static/vendor/leaflet.js"></script>
+  <script src="/static/vendor/leaflet-heat.js"></script>
+  <script src="/static/vendor/chart.umd.js"></script>
+
+  <!-- Application Main Script -->
+  <script src="/static/app.js"></script>
+</body>
+</html>
